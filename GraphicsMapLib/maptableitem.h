@@ -1,7 +1,6 @@
 ﻿#ifndef MAPTABLEITEM_H
 #define MAPTABLEITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsItem>
 #include <QGeoCoordinate>
 #include <QFont>
@@ -14,7 +13,7 @@
  * \warning 测试后得出 存在同一viewport的图元 GrapihcsView的更新模式，会存在图元较少，为提高更新效率，
  * 选用的视口更新模式为SmartViewportUpdate  更新其视口所有图元。
  */
-class GRAPHICSMAPLIB_EXPORT MapTableItem : public QObject, public QGraphicsItem
+class MapTableItem : public QObject, public QGraphicsItem
 {
     Q_OBJECT
 public:
@@ -47,8 +46,9 @@ public:
     void setValuePen(const QString &field, const QPen &pen);
     /// 设置字段值
     void setValue(const QString &field, const QString &value);
-    /// 设置启用固定方向
-    void setFixDirect(bool bFixDirect, double fixedangle = 0.0);
+    /// 设置启用固定方向. 添加作为子项时,会跟随父项转动；此时若想固定方向，启用固定方向，并angle设置为父转动角度负值.
+    /// params: 1.bFiexdDirect 标识是否启用固定方向.
+    void setFixDirect(bool bFixDirect);
     /// 设置圆角半径
     void setRoundedRadius(int roundRadius);
     /// 设置边框画笔
@@ -147,7 +147,6 @@ protected:
     bool m_checked = false;
     //
     QPoint m_pressPos;
-    QGeoCoordinate          m_coord;
 };
 
 

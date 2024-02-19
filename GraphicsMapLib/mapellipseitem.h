@@ -1,7 +1,6 @@
 ﻿#ifndef MAPELLIPSEITEM_H
 #define MAPELLIPSEITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsEllipseItem>
 #include <QGeoCoordinate>
 
@@ -9,7 +8,7 @@
  * \brief 椭圆形/正圆
  * \note 暂缺少图形拖动的实现
  */
-class GRAPHICSMAPLIB_EXPORT MapEllipseItem : public QObject, public QGraphicsEllipseItem
+class MapEllipseItem : public QObject, public QGraphicsEllipseItem
 {
     Q_OBJECT
 public:

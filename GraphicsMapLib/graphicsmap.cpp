@@ -39,7 +39,7 @@ GraphicsMap::GraphicsMap(QWidget *parent) : QGraphicsView(parent),
 GraphicsMap::~GraphicsMap()
 {
     // 在此处从场景移出瓦片，防止和多线程析构冲突
-    for(auto item : m_tiles) {
+    for(auto item : qAsConst(m_tiles)) {
         this->scene()->removeItem(item);
     }
     delete scene();
@@ -279,9 +279,10 @@ void GraphicsMapThread::requestTile(const GraphicsMap::TileRegion &region)
 {
     // hide all tile items if tile resource path is invalid
     if(m_path.isEmpty()) {
-        for(auto &tile : m_tileShowedSet) {
+        for(auto &tile : qAsConst(m_tileShowedSet)) {
             hideItem(tile);
         }
+
         emit requestFinished();
         return;
     }

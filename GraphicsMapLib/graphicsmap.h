@@ -1,7 +1,6 @@
 ﻿#ifndef GRAPHICSMAP_H
 #define GRAPHICSMAP_H
 
-#include "GraphicsMapLib_global.h"
 #include <QWidget>
 #include <QGraphicsView>
 #include <QWheelEvent>
@@ -16,7 +15,7 @@ class GraphicsMapThread;
  * \note 鼠标拖拽地图可通过setDragMode(QGraphicsView::ScrollHandDrag)实现
  * \bug QGraphicsView::centerOn函数会造成1个像素的抖动问题，参见源码https://github.com/qt/qtbase/blob/5.12.8/src/widgets/graphicsview/qgraphicsview.cpp 1936行
  */
-class GRAPHICSMAPLIB_EXPORT GraphicsMap : public QGraphicsView
+class GraphicsMap : public QGraphicsView
 {
     Q_OBJECT
 

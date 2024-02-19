@@ -43,6 +43,14 @@ add_library(${PROJECT_NAME} SHARED
   maptableitem.cpp
   mapscutcheonitem.h
   mapscutcheonitem.cpp
+  mapbrokenline.h
+  mapbrokenline.cpp
+  mapBezierCurveitem.h
+  mapBezierCurveitem.cpp
+  mapfreepathobject.h
+  mapfreepathobject.cpp
+  maptextitem.h
+  maptextitem.cpp
 )
 add_library(Lib::GraphicsMap ALIAS ${PROJECT_NAME})
 

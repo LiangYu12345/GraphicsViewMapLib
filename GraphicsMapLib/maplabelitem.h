@@ -1,7 +1,6 @@
 ﻿#ifndef MAPLABELITEM_H
 #define MAPLABELITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QObject>
 #include <QGraphicsPixmapItem>
 
@@ -9,7 +8,7 @@
  * \brief 地图文本标签对象
  * \details 可显示文字和背景图片。请确保先设置文本字体样式再设置文本
  */
-class GRAPHICSMAPLIB_EXPORT MapLabelItem : public QGraphicsPixmapItem
+class MapLabelItem : public QGraphicsPixmapItem
 {
 public:
     MapLabelItem();

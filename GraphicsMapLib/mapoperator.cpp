@@ -7,6 +7,11 @@
 #include "maptrailitem.h"
 #include "maplineitem.h"
 #include "maprectitem.h"
+#include "maptextitem.h"
+#include "mapBezierCurveitem.h"
+#include "mapfreepathobject.h"
+#include "mapbrokenline.h"
+#include "MapPointItem.h"
 #include <QDebug>
 
 MapEllipseOperator::MapEllipseOperator(QObject *parent) : MapOperator(parent)
@@ -240,7 +245,7 @@ void MapObjectOperator::end()
 
 bool MapObjectOperator::keyPressEvent(QKeyEvent *event)
 {
-    if(!m_obj)
+   if(!m_obj)
         return false;
     if(event->key() == Qt::Key_Backspace) {
         emit deleted(m_obj);
@@ -411,12 +416,21 @@ bool MapRouteOperator::mouseReleaseEvent(QMouseEvent *event)
     // append coordinate for route
     m_route->insert(index + 1, coord)->setIcon(m_waypointIcon);
     auto pointItem = m_route->points().at(index + 1);
-    pointItem->setText(QString::number(index + 1));  //文本不对
+    pointItem->setText(QString::number(index + 1));
     m_route->setChecked(index + 1);
     return false;
 }
 MapRangeLineOperator::MapRangeLineOperator(QObject *parent) : MapOperator(parent)
 {
+}
+
+void MapRangeLineOperator::takeOver(MapLineItem *item)
+{
+    if(m_line) {
+        m_line->setCheckable(false);
+    }
+    m_line = item;
+    m_line->setCheckable(true);
 }
 
 void MapRangeLineOperator::ready()
@@ -427,6 +441,9 @@ void MapRangeLineOperator::ready()
 
 void MapRangeLineOperator::end()
 {
+    if(m_line) {
+        m_line->setCheckable(false);
+    }
     MapOperator::end();
     m_line = nullptr;
 }
@@ -444,13 +461,60 @@ bool MapRangeLineOperator::keyPressEvent(QKeyEvent *event)
 
 bool MapRangeLineOperator::mousePressEvent(QMouseEvent *event)
 {
-    if (!(event->buttons() & Qt::LeftButton)) {
+    if(mode() == EditOnly) {
         skipOnceMouseEvent();
         return false;
     }
+    else if(mode() == CreateOnly) {
+        detach();
+        m_pressFirstPos = event->pos();
+        return true;
+    }
+    // else, do creating operation
+    else {  //CreateEdit
+        if(auto ctrlPoint = dynamic_cast<QGraphicsEllipseItem*>(m_map->itemAt(event->pos()))) {
+            auto cast = dynamic_cast<MapLineItem*>(ctrlPoint->parentItem());
+            // we should ignore event if we pressed the control point
+            if(cast && cast == m_line) {
+                skipOnceMouseEvent();
+                return false;
+            }
+        }
+        detach();
+        return true;
+    }
+    return false;
+}
 
-    m_pressFirstPos = event->pos();
-    if (!m_line) { // create route
+bool MapRangeLineOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    skipOnceMouseEvent();
+    if(event->buttons() & Qt::LeftButton){
+        detach();
+        emit completed();
+    }
+    return false;
+}
+
+bool MapRangeLineOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+//    Q_UNUSED(event)
+    if(!m_line)
+        return false;
+    auto point0 = m_pressFirstPos;
+    auto point1 = event->pos();
+    if((point0 - point1).manhattanLength() < 50) {
+        point1 = point0 + QPoint(25, 25);
+    }
+    //m_line->setLine({m_pressFirstPos, point1});
+	return false;
+}
+
+bool MapRangeLineOperator::mouseMoveEvent(QMouseEvent *event)
+{
+	auto second = m_map->toCoordinate(event->pos());
+
+    if (!m_line) { // create rangLine
         m_line = new MapLineItem;
         m_scene->addItem(m_line);
         m_line->setStartPoint(m_map->toCoordinate(event->pos()));
@@ -460,23 +524,8 @@ bool MapRangeLineOperator::mousePressEvent(QMouseEvent *event)
         emit created(m_line);
         return true;
     }
-	return false;
-}
 
-bool MapRangeLineOperator::mouseReleaseEvent(QMouseEvent *event)
-{
-    Q_UNUSED(event)
-    if (m_line) {
-		m_line = nullptr;
-        return false;
-	}
-	return false;
-}
-
-bool MapRangeLineOperator::mouseMoveEvent(QMouseEvent *event)
-{
-	auto second = m_map->toCoordinate(event->pos());
-	m_line->setEndPoint(second);
+    m_line->setEndPoint(second);
     double dis = m_line->endings().first.distanceTo(m_line->endings().second);
     if (dis > 1000.0) {
 		dis = dis * 1E-3;
@@ -490,7 +539,15 @@ bool MapRangeLineOperator::mouseMoveEvent(QMouseEvent *event)
 	// Press Event didn't propagte to QGraphicsView ,
 	// so we should to return false that helps up to zooming on cursor,
 	// and map will not be moved by cursor move
-	return false;
+    return false;
+}
+
+void MapRangeLineOperator::detach()
+{
+    if(m_line){
+        m_line->setCheckable(false);
+    }
+    m_line = nullptr;
 }
 
 MapRectOperator::MapRectOperator(QObject *parent) : MapOperator(parent)
@@ -499,7 +556,6 @@ MapRectOperator::MapRectOperator(QObject *parent) : MapOperator(parent)
 
 void MapRectOperator::takeOver(MapRectItem *item)
 {
-    end();
     m_rect = item;
 }
 
@@ -611,7 +667,6 @@ MapScutcheonOperator::MapScutcheonOperator(QObject *parent) : MapOperator(parent
 
 void MapScutcheonOperator::takeOver(MapTableItem *item)
 {
-    end();
     m_toolTip = item;
 }
 
@@ -693,4 +748,678 @@ bool MapScutcheonOperator::mouseDoubleClickEvent(QMouseEvent *event)
         return false;
     }
     return false;
+}
+
+MapTextOperator::MapTextOperator(QObject *parent) : MapOperator(parent)
+{
+
+}
+
+void MapTextOperator::takeOver(MapTextItem *item)
+{
+    if(m_text == item)
+        return;
+    m_text = item;
+}
+
+void MapTextOperator::ready()
+{
+    MapOperator::ready();
+    m_text = nullptr;
+    m_finishRequested = false;
+}
+
+void MapTextOperator::end()
+{
+    MapOperator::end();
+    if(m_text)
+    {
+        m_finishRequested = true;
+        m_text->setEditabel(false);
+    }
+    m_text = nullptr;
+}
+
+bool MapTextOperator::keyPressEvent(QKeyEvent *event)
+{
+    // 分模式判断Key_Backspace
+    if(!m_isEditTextFinish)
+        return false;
+    if(m_finishRequested == false && m_isEditTextFinish) {
+        if(event->key() == Qt::Key_Backspace)
+        {
+            m_text->setEditabel(false);
+            m_currentItem->setTextInteractionFlags(Qt::NoTextInteraction);
+            m_map->scene()->removeItem(m_currentItem);
+            m_map->scene()->removeItem(m_text);
+            m_currentItem = nullptr;
+            m_text = nullptr;
+            m_isEditTextFinish = true;
+            m_isDelete = true;
+
+            emit deleted(m_text);
+        }
+    }
+    return false;
+}
+
+bool MapTextOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::LeftButton)
+    {
+        if(auto ctrlPoint = dynamic_cast<QGraphicsRectItem*>(m_map->itemAt(event->pos()))) {
+            auto Text = dynamic_cast<QGraphicsTextItem*>(ctrlPoint->parentItem());
+            auto cast = dynamic_cast<MapTextItem*>(Text->parentItem());
+            if(MapTextItem::items().contains(cast)) {
+                m_currentItem = cast->getTextItem();
+                m_currentItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+                m_isEditTextFinish = false;
+                m_isDelete = false;
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+bool MapTextOperator::mousePressEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::LeftButton)
+    {
+        if(auto ctrlPoint = dynamic_cast<QGraphicsTextItem*>(m_map->itemAt(event->pos()))) {
+            m_currentItem = ctrlPoint;
+            auto cast = dynamic_cast<MapTextItem*>(ctrlPoint->parentItem());
+            if(MapTextItem::items().contains(cast)) {
+                m_text = cast;
+                m_text->setEditabel(true);
+                m_currentItem->setFlag(QGraphicsItem::ItemIsMovable, true);
+                m_finishRequested = false;
+                m_isDelete = false;
+                return false;
+            }
+        }
+    }
+    if(!m_isDelete){      // 当前一个文本被激活 并未被删除
+        if(event->button() == Qt::RightButton)
+        {
+            m_finishRequested = true;
+            m_text->setEditabel(false);
+            m_currentItem->setFlag(QGraphicsItem::ItemIsMovable, false);
+            m_currentItem->setTextInteractionFlags(Qt::NoTextInteraction);
+            m_isEditTextFinish = true;
+            return false;
+        }
+    }
+    m_pressPos = event->pos();
+    return false;
+}
+
+bool MapTextOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    if(m_finishRequested)
+    {
+        m_finishRequested = false;
+        if(m_text)
+        {
+            m_text->setEditabel(false);
+            m_currentItem->setFlag(QGraphicsItem::ItemIsMovable, false);
+            m_text = nullptr;
+        }
+        return false;
+    }
+
+    if(event->button() ==  Qt::LeftButton)
+    {
+        if(!m_text)
+        {
+            if((m_pressPos-event->pos()).manhattanLength() > 3)
+                return false;
+            if(auto ctrlPoint = dynamic_cast<QGraphicsRectItem*>(m_map->itemAt(event->pos()))) {
+                //auto Text = dynamic_cast<QGraphicsTextItem*>(ctrlPoint->parentItem());
+                //auto cast = dynamic_cast<MapTextItem*>(Text->parentItem());
+            }
+            m_text = new MapTextItem;
+            auto coord = m_map->toCoordinate(event->pos());
+            m_text->setPos(m_map->toScene(coord));
+            m_text->setEditabel(true);
+            m_scene->addItem(m_text);
+            m_currentItem = m_text->getTextItem();
+            m_finishRequested = false;
+            m_isDelete = false;
+        }
+    }
+    return false;
+}
+
+bool MapTextOperator::mouseMoveEvent(QMouseEvent *event)
+{
+    MapOperator::mouseMoveEvent(event);
+
+    if (m_finishRequested)
+        return false;
+    return false;
+}
+
+MapItemOperator::MapItemOperator(QObject *parent)
+    : MapOperator(parent),
+    m_ctrlPressed(false)
+{
+
+}
+
+void MapItemOperator::takeOver(QList<QGraphicsItem *>items)
+{
+    //qDeleteAll(m_currentItems);
+    //m_currentItems.clear();
+
+    for(auto item : qAsConst(items))
+        m_currentItems.insert(item);
+}
+
+void MapItemOperator::ready()
+{
+    MapOperator::ready();
+}
+
+void MapItemOperator::end()
+{
+    MapOperator::end();
+}
+
+bool MapItemOperator::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Control){
+        m_ctrlPressed = true;
+    }
+    return false;
+}
+
+bool MapItemOperator::keyReleaseEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Control){
+        m_ctrlPressed = false;
+    }
+    return false;
+}
+
+bool MapItemOperator::mousePressEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::RightButton){
+        for(auto item :  qAsConst(m_currentItems)){
+            if(auto object = dynamic_cast<MapObjectItem *>(item)){
+                object->setChecked(false);
+                object->setMoveable(false);
+                object->setCheckable(false);
+            }
+            else if(auto ellipse = dynamic_cast<MapEllipseItem *>(item)){
+                ellipse->setEditable(false);
+            }
+            else if(auto rect = dynamic_cast<MapRectItem *>(item)){
+                rect->setEditable(false);
+            }
+            else if(auto polygon = dynamic_cast<MapPolygonItem *>(item)){
+                polygon->setEditable(false);
+            }
+            else if(auto line = dynamic_cast<MapLineItem *>(item)){
+                line->setCheckable(false);
+            }
+        }
+        emit finished();
+        return false;
+    }
+    if(m_ctrlPressed && event->buttons() & Qt::LeftButton){
+        auto mouseItems = m_map->items(event->pos());
+        for(auto item : qAsConst(mouseItems)){
+            if(m_currentItems.contains(item)){
+                if(auto object = dynamic_cast<MapObjectItem *>(item)){
+                    object->setChecked(false);
+                    object->setMoveable(false);
+                    object->setCheckable(false);
+                }
+                else if(auto ellipse = dynamic_cast<MapEllipseItem *>(item)){
+                    ellipse->setEditable(false);
+                }
+                else if(auto rect = dynamic_cast<MapRectItem *>(item)){
+                    rect->setEditable(false);
+                }
+                else if(auto polygon = dynamic_cast<MapPolygonItem *>(item)){
+                    polygon->setEditable(false);
+                }
+                else if(auto line = dynamic_cast<MapLineItem *>(item)){
+                    line->setCheckable(false);
+                }
+                m_currentItems.remove(item);
+                emit removeItem(item);
+            }
+            else{
+                if(auto object = dynamic_cast<MapObjectItem *>(item)){
+                    object->setMoveable(true);
+                    object->setCheckable(true);
+                    object->setChecked(true);
+                }
+                else if(auto ellipse = dynamic_cast<MapEllipseItem *>(item)){
+                    ellipse->setEditable(true);
+                }
+                else if(auto rect = dynamic_cast<MapRectItem *>(item)){
+                    rect->setEditable(true);
+                }
+                else if(auto polygon = dynamic_cast<MapPolygonItem *>(item)){
+                    polygon->setEditable(true);
+                }
+                else if(auto line = dynamic_cast<MapLineItem *>(item)){
+                    line->setCheckable(true);
+                }
+                m_currentItems.insert(item);
+                emit addItem(item);
+            }
+        }
+    }
+    return false;
+}
+
+bool MapItemOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    return false;
+}
+
+bool MapItemOperator::mouseMoveEvent(QMouseEvent *event)
+{
+    return false;
+}
+
+bool MapItemOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    return false;
+}
+
+MapBexierCurveOperator::MapBexierCurveOperator(QObject *parent)
+{
+    setMouseTracking(true);
+}
+
+void MapBexierCurveOperator::takeOver(MapBezierCurveItem *item)
+{
+    if(m_bezier == item)
+        return;
+    m_bezier = item;
+}
+
+void MapBexierCurveOperator::ready()
+{
+    m_bezier = nullptr;
+}
+
+void MapBexierCurveOperator::end()
+{
+    if(m_bezier) {
+        m_bezier->setEditable(false);
+    }
+    m_bezier = nullptr;
+}
+
+bool MapBexierCurveOperator::keyPressEvent(QKeyEvent *event)
+{
+    if(!m_bezier)
+        return false;
+    if(event->key() == Qt::Key_Backspace) {
+        emit deleted(m_bezier);
+        m_bezier = nullptr;
+    }
+    return false;
+}
+
+bool MapBexierCurveOperator::keyReleaseEvent(QKeyEvent *event)
+{
+    return false;
+}
+
+bool MapBexierCurveOperator::mousePressEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::RightButton) {
+        if(m_bezier) {
+            m_bezier->setEditable(false);
+        }
+        m_bezier = nullptr;
+        skipOnceMouseEvent();
+        emit completed();
+        return false;
+    }
+
+    auto coord = m_map->toCoordinate(event->pos());
+    coord.setAltitude(0);
+
+    if(!m_bezier){
+        m_bezier = new MapBezierCurveItem;
+        m_scene->addItem(m_bezier);
+        m_bezier->setEditable(true);
+        emit created(m_bezier);
+    }
+    m_bezier->append(coord, true);
+
+    return true;
+}
+
+bool MapBexierCurveOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event);
+    return false;
+}
+
+bool MapBexierCurveOperator::mouseMoveEvent(QMouseEvent *event)
+{
+    if(m_bezier){
+        auto coord = m_map->toCoordinate(event->pos());
+        coord.setAltitude(0);
+
+        m_bezier->removeTempPoint();
+        m_bezier->append(coord, false);
+    }
+    return false;
+}
+
+bool MapBexierCurveOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    skipOnceMouseEvent();
+    // finish
+    if(event->buttons() & Qt::LeftButton) {
+        detach();
+        emit completed();
+    }
+    return false;
+}
+
+void MapBexierCurveOperator::detach()
+{
+    if(m_bezier) {
+        m_bezier->setEditable(false);
+        m_bezier = nullptr;
+    }
+}
+
+MapFreeDrawOperator::MapFreeDrawOperator(QObject *parent)
+{
+
+}
+
+void MapFreeDrawOperator::takeOver(MapFreePathItem *item)
+{
+    if(m_freePath) {
+        m_freePath->setEditable(false);
+    }
+    m_freePath = item;
+    m_freePath->setEditable(true);
+}
+
+void MapFreeDrawOperator::ready()
+{
+    m_freePath = nullptr;
+}
+
+void MapFreeDrawOperator::end()
+{
+    if(m_freePath) {
+        m_freePath->setEditable(false);
+    }
+    m_freePath = nullptr;
+}
+
+bool MapFreeDrawOperator::keyPressEvent(QKeyEvent *event)
+{
+    if(!m_freePath)
+        return false;
+    if(event->key() == Qt::Key_Backspace) {
+        auto points = m_freePath->points();
+        for(auto &point : qAsConst(points)) {
+            m_freePath->remove(point);
+        }
+    }
+    return false;
+}
+
+bool MapFreeDrawOperator::mousePressEvent(QMouseEvent *event)
+{
+    if(mode() == EditOnly) {
+        skipOnceMouseEvent();
+        return false;
+    }
+    // complete
+    if(event->buttons() & Qt::RightButton) {
+        if(m_freePath) {
+            m_freePath->setEditable(false);
+        }
+        m_freePath = nullptr;
+        skipOnceMouseEvent();
+        emit completed();
+        return false;
+    }
+
+    // unset editable for previous created item
+    detach();
+
+    m_pressPos = event->pos();
+    qDebug()<< "pressPos" << m_pressPos;
+
+    return true;
+}
+
+bool MapFreeDrawOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    return false;
+}
+
+bool MapFreeDrawOperator::mouseMoveEvent(QMouseEvent *event)
+{
+    auto coord = m_map->toCoordinate(event->pos());
+    coord.setAltitude(0);
+    if(!m_freePath) { // create freePath
+        m_freePath = new MapFreePathItem;
+        m_scene->addItem(m_freePath);
+        m_freePath->setEditable(true);
+        //
+        emit created(m_freePath);
+    }
+    m_freePath->append(coord);
+    return false;
+}
+
+bool MapFreeDrawOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event)
+    // the last point have been craeted since previous mouse release event
+    // complete
+    if(m_freePath) {
+        m_freePath->setEditable(false);
+    }
+    m_freePath = nullptr;
+    emit completed();
+    return false;
+}
+
+void MapFreeDrawOperator::detach()
+{
+    if(m_freePath){
+        m_freePath->setEditable(false);
+    }
+    m_freePath = nullptr;
+}
+
+MapBrokenLineOperator::MapBrokenLineOperator(QObject *parent)
+{
+
+}
+
+void MapBrokenLineOperator::takeOver(MapBrokenLine *item)
+{
+    if(m_brokenLine) {
+        m_brokenLine->setEditable(false);
+    }
+    m_brokenLine = item;
+}
+
+void MapBrokenLineOperator::ready()
+{
+    MapOperator::ready();
+    m_brokenLine = nullptr;
+}
+
+void MapBrokenLineOperator::end()
+{
+    MapOperator::end();
+    detach();
+}
+
+bool MapBrokenLineOperator::keyPressEvent(QKeyEvent *event)
+{
+    if(!m_brokenLine)
+        return false;
+    if(event->key() == Qt::Key_Backspace) {
+        m_brokenLine->remove(m_brokenLine->points().size()-1);
+    }
+    return false;
+}
+
+bool MapBrokenLineOperator::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event)
+    // the last point have been created since previous mouse release event
+    if(m_brokenLine) {
+        this->skipOnceMouseEvent();
+        detach();
+        emit completed();
+        return true;    // prevent double Click propagate to item
+    }
+    return false;
+}
+
+bool MapBrokenLineOperator::mousePressEvent(QMouseEvent *event)
+{
+    if(m_mode == EditOnly) {
+        skipOnceMouseEvent();
+        return false;
+    }
+    m_pressPos = event->pos();
+    return false;
+}
+
+bool MapBrokenLineOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    // do nothing
+    if(m_pressPos != event->pos())
+        return false;
+    // create begin or append
+    if(!m_brokenLine) {
+        m_brokenLine = new MapBrokenLine;
+        m_brokenLine->setEditable(true);
+        m_scene->addItem(m_brokenLine);
+        //
+        emit created(m_brokenLine);
+    }
+    m_brokenLine->append(m_map->toCoordinate(event->pos()));
+    return false;
+}
+
+void MapBrokenLineOperator::detach()
+{
+    if(m_brokenLine){
+        m_brokenLine->setEditable(false);
+    }
+    m_brokenLine = nullptr;
+}
+
+
+MapLocationPointOperator::MapLocationPointOperator(QObject *parent) : MapOperator(parent),
+    m_item(nullptr),
+    m_bDoubleClicked(false),
+    m_bShow(false)
+{
+
+}
+
+bool MapLocationPointOperator::mouseClickEvent(QMouseEvent *event)
+{
+    if (event->button() != Qt::LeftButton)
+        return false;
+
+    auto scenePos = m_map->mapToScene(event->pos());
+    if (!m_item)    // first create
+    {
+        m_item = new MapPointItem();
+        QPixmap pix(":/res/star.png");
+        m_item->setIcon(pix);
+        m_map->scene()->addItem(m_item);
+        connect(m_item, &MapPointItem::coordinateChanged, this, &MapLocationPointOperator::coordinateChanged);
+
+
+    }
+
+    m_item->SetPoint(scenePos, m_PointType);
+    show(false);
+
+    auto textItem = m_item->GetTextItem();
+
+    return false;
+}
+
+void MapLocationPointOperator::setAmuizth(float amuizth)
+{
+    if (m_item)
+    {
+        m_item->setAmuizth(amuizth);
+    }
+}
+
+void MapLocationPointOperator::setPos(QGeoCoordinate coord)
+{
+    if(m_item)
+        m_item->setPos(m_map->toScene(coord));
+}
+
+void MapLocationPointOperator::setPos(double x, double y)
+{
+    if (m_item)
+        m_item->setPos(QPointF(x, y));
+}
+
+void MapLocationPointOperator::setIconShow(bool isShow)
+{
+    if (m_item)
+        m_item->setVisible(isShow);
+}
+
+bool MapLocationPointOperator::mousePressEvent(QMouseEvent *event)
+{
+    return mouseClickEvent(event);
+}
+
+bool MapLocationPointOperator::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (!m_item)
+        return false;
+
+    if (m_PointType >= 1)
+    {
+        emit SigEnd();//当为标记点时，鼠标释放直接结束
+    }
+    if (event->button() == Qt::RightButton)
+    {
+        m_bShow = false;
+        emit SigEnd();
+        if (m_PointType < 1) //定位点右键隐藏，标记点右键不隐藏 m_PointType>=1 为标记点
+        {
+            m_item->SetCtrlVisiable(false);
+        }
+    }
+    emit sigPosition(m_map->toCoordinate(event->pos()));
+
+    return  false;
+}
+
+void MapLocationPointOperator::show(bool bIsShow)
+{
+    m_bShow = bIsShow;
+    if (!m_item)
+    {
+        return ;
+    }
+    m_item->SetCtrlVisiable(bIsShow);
 }

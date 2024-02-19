@@ -1,7 +1,6 @@
 ﻿#ifndef MAPROUTEITEM_H
 #define MAPROUTEITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsPathItem>
 #include <QGeoCoordinate>
 #include <QPen>
@@ -12,7 +11,7 @@ class MapObjectItem;
  * \brief 航路
  * \note 航路类将负责航点的生命周期
  */
-class GRAPHICSMAPLIB_EXPORT MapRouteItem : public QObject, public QGraphicsPathItem
+class MapRouteItem : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT
 public:

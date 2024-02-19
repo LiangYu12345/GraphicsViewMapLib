@@ -1,7 +1,6 @@
 ﻿#ifndef MAPPIEITEM_H
 #define MAPPIEITEM_H
 
-#include <GraphicsMapLib_global.h>
 #include <QGraphicsEllipseItem>
 #include <QGeoCoordinate>
 #include <QSet>
@@ -12,7 +11,7 @@ class MapObjectItem;
  * \brief 扇形
  * \details 可用于SAR、红外等效果的扇形区域
  */
-class GRAPHICSMAPLIB_EXPORT MapPieItem : public QGraphicsEllipseItem
+class MapPieItem : public QGraphicsEllipseItem
 {
 public:
     MapPieItem();
@@ -48,7 +47,7 @@ private:
  * \details 可用于SAR、红外等效果的威力区
  * \note 更改三角形和梯形外观，请通过getTriangle和getTrapezoid获取实例，然后更改画笔和画刷
  */
-class GRAPHICSMAPLIB_EXPORT MapTriTrapItem : public QObject, public QGraphicsPolygonItem
+class MapTriTrapItem : public QObject, public QGraphicsPolygonItem
 {
     Q_OBJECT
 public:

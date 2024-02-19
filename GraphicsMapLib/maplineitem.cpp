@@ -35,7 +35,14 @@ MapLineItem::MapLineItem()
 
 MapLineItem::~MapLineItem()
 {
-	m_items.remove(this);
+    m_items.remove(this);
+}
+
+void MapLineItem::setCheckable(bool checkable)
+{
+    if(m_checkable == checkable)
+        return;
+    m_checkable = checkable;
 }
 
 void MapLineItem::setStartPoint(const QGeoCoordinate & pt)
@@ -92,7 +99,12 @@ void MapLineItem::setText(const QString & text, Qt::Alignment align)
 
 void MapLineItem::setTextColor(const QColor & color)
 {
-	m_text.setPen(color);
+    m_text.setPen(color);
+}
+
+void MapLineItem::setLineColor(const QColor &color)
+{
+    this->setPen(color);
 }
 
 void MapLineItem::setFontSizeF(const qreal size)
@@ -112,7 +124,7 @@ void MapLineItem::setLineWidth(const int width)
 void MapLineItem::setStartIcon(const QPixmap &pixmap, Qt::Alignment align)
 {
     m_startIcon.setPixmap(pixmap);
-	auto boundRect = m_startIcon.boundingRect();
+    auto boundRect = m_startIcon.boundingRect();
 	QPointF offset(-boundRect.width() / 2, -boundRect.height());
 
 	if (align & Qt::AlignLeft) {
@@ -133,14 +145,14 @@ void MapLineItem::setStartIcon(const QPixmap &pixmap, Qt::Alignment align)
 	else if (align & Qt::AlignBottom) {
 		offset.setY(boundRect.height());
 	}
-	m_startIcon.setOffset(offset);
+    m_startIcon.setOffset(offset);
     updateEndings();
 }
 
 void MapLineItem::setEndIcon(const QPixmap &pixmap, Qt::Alignment align)
 {
     m_endIcon.setPixmap(pixmap);
-	auto boundRect = m_endIcon.boundingRect();
+    auto boundRect = m_endIcon.boundingRect();
 	QPointF offset(-boundRect.width() / 2, -boundRect.height());
 
 	if (align & Qt::AlignLeft) {
@@ -161,7 +173,7 @@ void MapLineItem::setEndIcon(const QPixmap &pixmap, Qt::Alignment align)
 	else if (align & Qt::AlignBottom) {
 		offset.setY(boundRect.height());
 	}
-	m_endIcon.setOffset(offset);
+    m_endIcon.setOffset(offset);
     updateEndings();
 }
 
@@ -178,6 +190,12 @@ void MapLineItem::attach(MapObjectItem *obj, MapLabelItem *label)
 const QSet<MapLineItem *> &MapLineItem::items()
 {
     return m_items;
+}
+
+void MapLineItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    QGraphicsLineItem::mouseDoubleClickEvent(event);
+    emit doubleClicked();
 }
 
 void MapLineItem::updateEndings()

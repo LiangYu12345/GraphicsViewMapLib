@@ -51,10 +51,14 @@ void MapTrailItem::clear()
 
 void MapTrailItem::attach(MapObjectItem *obj)
 {
+    if (obj == m_attachObj)
+        return;
+
     if(m_attachObj)
         disconnect(m_attachObj, &MapObjectItem::coordinateChanged, this, &MapTrailItem::addCoordinate);
-    //
-    clear();
+
+    // 开始绘制航迹时并不清除之前的轨迹
+//    clear();
     m_attachObj = obj;
     if(m_attachObj)
         connect(m_attachObj, &MapObjectItem::coordinateChanged, this, &MapTrailItem::addCoordinate);

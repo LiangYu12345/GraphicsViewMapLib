@@ -1,13 +1,10 @@
-﻿#include "mappolygonitem.h"
+﻿#include "mapbrokenline.h"
 #include "graphicsmap.h"
-#include <QGraphicsEllipseItem>
-#include <QGraphicsSceneMouseEvent>
-#include <QGraphicsSceneHoverEvent>
 #include <QDebug>
 
-QSet<MapPolygonItem*> MapPolygonItem::m_items;
+QSet<MapBrokenLine*> MapBrokenLine::m_items;
 
-MapPolygonItem::MapPolygonItem() :
+MapBrokenLine::MapBrokenLine() :
     m_editable(false),
     m_sceneAdded(false)
 {
@@ -29,12 +26,12 @@ MapPolygonItem::MapPolygonItem() :
     updateEditable();
 }
 
-MapPolygonItem::~MapPolygonItem()
+MapBrokenLine::~MapBrokenLine()
 {
     m_items.remove(this);
 }
 
-void MapPolygonItem::setEditable(bool editable)
+void MapBrokenLine::setEditable(bool editable)
 {
     if(m_editable == editable)
         return;
@@ -44,17 +41,17 @@ void MapPolygonItem::setEditable(bool editable)
     updateEditable();
 }
 
-bool MapPolygonItem::isEditable() const
+bool MapBrokenLine::isEditable() const
 {
     return m_editable;
 }
 
-void MapPolygonItem::toggleEditable()
+void MapBrokenLine::toggleEditable()
 {
     setEditable(!m_editable);
 }
 
-void MapPolygonItem::append(const QGeoCoordinate &coord)
+void MapBrokenLine::append(const QGeoCoordinate &coord)
 {
     m_coords.append(coord);
     // Adding scene point
@@ -65,7 +62,7 @@ void MapPolygonItem::append(const QGeoCoordinate &coord)
     emit added(m_points.size()-1, coord);
 }
 
-void MapPolygonItem::replace(const int &index, const QGeoCoordinate &coord)
+void MapBrokenLine::replace(const int &index, const QGeoCoordinate &coord)
 {
     if(m_coords.at(index) == coord)
         return;
@@ -78,7 +75,7 @@ void MapPolygonItem::replace(const int &index, const QGeoCoordinate &coord)
     emit updated(index, coord);
 }
 
-void MapPolygonItem::remove(int index)
+void MapBrokenLine::remove(int index)
 {
     if(index < 0 || index >= m_coords.size())
         return;
@@ -91,12 +88,12 @@ void MapPolygonItem::remove(int index)
     emit removed(index, coord);
 }
 
-void MapPolygonItem::removeEnd()
+void MapBrokenLine::removeEnd()
 {
     remove(m_coords.size() - 1);
 }
 
-void MapPolygonItem::setPoints(const QVector<QGeoCoordinate> &coords)
+void MapBrokenLine::setPoints(const QVector<QGeoCoordinate> &coords)
 {
     if(m_coords == coords)
         return;
@@ -113,56 +110,62 @@ void MapPolygonItem::setPoints(const QVector<QGeoCoordinate> &coords)
     emit changed();
 }
 
-const QVector<QGeoCoordinate> &MapPolygonItem::points() const
+const QVector<QGeoCoordinate> &MapBrokenLine::points() const
 {
     return m_coords;
 }
 
-int MapPolygonItem::count()
+int MapBrokenLine::count()
 {
     return m_coords.size();
 }
 
-const QGeoCoordinate &MapPolygonItem::at(int i) const
+const QGeoCoordinate &MapBrokenLine::at(int i) const
 {
     return m_coords.at(i);
 }
 
-const QSet<MapPolygonItem *> &MapPolygonItem::items()
+const QSet<MapBrokenLine *> &MapBrokenLine::items()
 {
     return m_items;
 }
 
-QVariant MapPolygonItem::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)
+QVariant MapBrokenLine::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)
 {
    if(change != ItemSceneHasChanged)
-       return QGraphicsPolygonItem::itemChange(change, value);
+       return QGraphicsPathItem::itemChange(change, value);
 
    m_sceneAdded = true;
-   return QGraphicsPolygonItem::itemChange(change, value);
+   return QGraphicsPathItem::itemChange(change, value);
 }
 
-void MapPolygonItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+void MapBrokenLine::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-    QGraphicsPolygonItem::mouseDoubleClickEvent(event);
+    QGraphicsPathItem::mouseDoubleClickEvent(event);
     emit doubleClicked();
 }
 
-void MapPolygonItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+void MapBrokenLine::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
     if(m_editable)
         m_menu->exec(QCursor::pos());
 }
 
-void MapPolygonItem::updatePolygon()
+void MapBrokenLine::updatePolygon()
 {
     // Reset polygon data to QGraphicsPolygonItem
-    this->setPolygon(m_points);
+    QPainterPath p;
+    for(auto item : qAsConst(m_points)){
+        if(item == m_points.first())
+            p.moveTo(item);
+        p.lineTo(item);
+    }
+    this->setPath(p);
 
     updateEditable();
 }
 
-void MapPolygonItem::updateEditable()
+void MapBrokenLine::updateEditable()
 {
     auto pen = this->pen();
     pen.setColor(m_editable ? Qt::white : Qt::lightGray);

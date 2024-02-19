@@ -33,7 +33,7 @@ void MapRouteItem::setMoveable(bool movable)
     if(m_moveable == movable)
         return;
     m_moveable = movable;
-    for(auto point : m_points) {
+    for(auto point : qAsConst(m_points)) {
         point->setMoveable(m_moveable);
     }
     this->setPen(m_moveable ? m_moveablePen : m_normalPen);
@@ -45,7 +45,7 @@ void MapRouteItem::setCheckable(bool checkable)
     if(m_checkable == checkable)
         return;
     m_checkable = checkable;
-    for(auto point : m_points) {
+    for(auto point : qAsConst(m_points)) {
         point->setAllowMouseEvent(m_checkable);
         point->setCheckable(m_checkable);
     }
@@ -56,7 +56,7 @@ void MapRouteItem::setChecked(int index, bool checked)
     if(!m_checkable)
         return;
     if(m_exclusive && checked) {
-        for(auto point : m_points) {
+        for(auto point : qAsConst(m_points)) {
             point->setChecked(false);
         }
     }
@@ -87,7 +87,7 @@ void MapRouteItem::setExclusive(bool exclusive)
         return;
     m_exclusive = exclusive;
     if(m_exclusive) {
-        for(auto point : m_points) {
+        for(auto point : qAsConst(m_points)) {
             point->setChecked(false);
         }
     }

@@ -23,7 +23,7 @@ MapTableItem::MapTableItem(const QGeoCoordinate &coord, QGraphicsItem * parent)
 
     m_BorderPen = QPen(QColor(128, 255, 255, 200));
     m_BackBrush = QBrush(QColor(128, 255, 255, 50));
-    m_backPixmap = QPixmap(":/Resources/logo.png");
+    m_backPixmap = QPixmap();
 
     m_AnchorPos = AP_TOPLEFT;
 
@@ -133,7 +133,7 @@ void MapTableItem::setValue(const QString &field, const QString &value)
     }
 }
 
-void MapTableItem::setFixDirect(bool bFixDirect, double fixedangle)
+void MapTableItem::setFixDirect(bool bFixDirect)
 {
     m_bFixedDirect = bFixDirect;
 }
@@ -271,14 +271,14 @@ QRectF MapTableItem::boundingRect() const
     switch (m_AnchorPos)
     {
     case AP_TOPLEFT:    break;
-    case AP_TOPRIGHT:   rect.setTopLeft(QPointF(-nScutWide, 0.0)); break;
-    case AP_BOTTOMLEFT: rect.setTopLeft(QPointF(0.0, -nScutHigh)); break;
-    case AP_BOTTOMRIGHT:rect.setTopLeft(QPointF(-nScutWide, -nScutHigh));break;
-    case AP_MIDDLELEFT: rect.setTopLeft(QPointF(0.0, -nScutHigh / 2)); break;
-    case AP_MIDDLERIGHT:rect.setTopLeft(QPointF(-nScutWide , -nScutHigh / 2)); break;
-    case AP_MIDDLETOP:  rect.setTopLeft(QPointF(-nScutWide / 2, 0.0)); break;
-    case AP_MIDDLEBTTOM:rect.setTopLeft(QPointF(-nScutWide / 2, -nScutHigh ));break;
-    case AP_CENTER:     rect.setTopLeft(QPointF(-nScutWide / 2, -nScutHigh / 2));break;
+    case AP_TOPRIGHT:   rect.setTopLeft(QPointF(-nScutWide, 0.0)); rect.setBottomRight(QPointF(0.0, nScutHigh)); break;
+    case AP_BOTTOMLEFT: rect.setTopLeft(QPointF(0.0, -nScutHigh)); rect.setBottomRight(QPointF(nScutWide, 0.0)); break;
+    case AP_BOTTOMRIGHT:rect.setTopLeft(QPointF(-nScutWide, -nScutHigh)); rect.setBottomRight(QPointF(0.0, 0.0)); break;
+    case AP_MIDDLELEFT: rect.setTopLeft(QPointF(0.0, -nScutHigh / 2)); rect.setBottomRight(QPointF(nScutWide, nScutHigh / 2)); break;
+    case AP_MIDDLERIGHT:rect.setTopLeft(QPointF(-nScutWide , -nScutHigh / 2)); rect.setBottomRight(QPointF(0.0, nScutHigh / 2)); break;
+    case AP_MIDDLETOP:  rect.setTopLeft(QPointF(-nScutWide / 2, 0.0)); rect.setBottomRight(QPointF(nScutWide / 2, nScutHigh)); break;
+    case AP_MIDDLEBTTOM:rect.setTopLeft(QPointF(-nScutWide / 2, -nScutHigh )); rect.setBottomRight(QPointF(nScutWide / 2, 0.0)); break;
+    case AP_CENTER:     rect.setTopLeft(QPointF(-nScutWide / 2, -nScutHigh / 2)); rect.setBottomRight(QPointF(nScutWide / 2, nScutHigh / 2)); break;
     default:            break;
     }
 
@@ -454,20 +454,20 @@ QVariant MapTableItem::itemChange(GraphicsItemChange change, const QVariant &val
 
 void MapTableItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    QGraphicsItem::hoverEnterEvent(event);
-    if(this->flags() & QGraphicsItem::ItemIsMovable) {
-        this->setScale(1.2);
-        this->setCursor(Qt::DragMoveCursor);
-    }
+//    QGraphicsItem::hoverEnterEvent(event);
+//    if(this->flags() & QGraphicsItem::ItemIsMovable) {
+//        this->setScale(1.2);
+//        this->setCursor(Qt::DragMoveCursor);
+//    }
 }
 
 void MapTableItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    QGraphicsItem::hoverLeaveEvent(event);
-    if(this->flags() & QGraphicsItem::ItemIsMovable) {
-        this->setScale(1.1);
-        this->setCursor(Qt::ArrowCursor);
-    }
+//    QGraphicsItem::hoverLeaveEvent(event);
+//    if(this->flags() & QGraphicsItem::ItemIsMovable) {
+//        this->setScale(1.1);
+//        this->setCursor(Qt::ArrowCursor);
+//    }
 }
 
 void MapTableItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -479,14 +479,17 @@ void MapTableItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     else
         event->ignore();
     m_pressPos = event->screenPos();
+    setChecked(!m_checked);
 }
 
 void MapTableItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    QGraphicsItem::mouseMoveEvent(event);
+    if(m_checked){
+        QGraphicsItem::mouseMoveEvent(event);
 
-    /// 由于该Item 可能继承其他 Item  所以在此传递其Item 在场景里的坐标
-    emit coordinateDragged(this->scenePos());
+        /// 由于该Item 可能继承其他 Item  所以在此传递其Item 在场景里的坐标
+        emit coordinateDragged(this->scenePos());
+    }
 }
 
 void MapTableItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
@@ -496,10 +499,10 @@ void MapTableItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     if(!m_enableMouse)
         return;
     // if moved some distance, we ignore switch-check
-    if(m_checkable && ((m_pressPos-event->screenPos()).manhattanLength() < 3)
-            && this->contains(event->pos())) {
-        setChecked(!m_checked);
+    if(m_checkable && ((m_pressPos-event->screenPos()).manhattanLength() < 3)) {
+
     }
+    setChecked(!m_checked);
 }
 
 void MapTableItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)

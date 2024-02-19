@@ -1,7 +1,6 @@
 ﻿#ifndef MAPRECTITEM_H
 #define MAPRECTITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsRectItem>
 #include <QGeoCoordinate>
 
@@ -9,7 +8,7 @@
  * \brief 矩形
  * \note 暂缺少图形拖动的实现
  */
-class GRAPHICSMAPLIB_EXPORT MapRectItem : public QObject, public QGraphicsRectItem
+class MapRectItem : public QObject, public QGraphicsRectItem
 {
     Q_OBJECT
 public:

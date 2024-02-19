@@ -1,7 +1,6 @@
 ﻿#ifndef MAPTRAILITEM_H
 #define MAPTRAILITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsPathItem>
 #include <QGeoCoordinate>
 
@@ -11,7 +10,7 @@ class MapObjectItem;
  * \brief 轨迹
  * \warning 该元素对渲染效率影响较大，会占用过多CPU，暂未找到好的解决方案
  */
-class GRAPHICSMAPLIB_EXPORT MapTrailItem : public QObject, public QGraphicsPathItem
+class MapTrailItem : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT
 public:

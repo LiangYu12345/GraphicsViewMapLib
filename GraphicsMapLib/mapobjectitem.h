@@ -1,12 +1,12 @@
 ﻿#ifndef MAPOBJECTITEM_H
 #define MAPOBJECTITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include "maprouteitem.h"
 #include <QGraphicsPixmapItem>
 #include <QGeoCoordinate>
 #include <QVector3D>
 #include <QDebug>
+#include <QMenu>
 
 class MapTableItem;
 class MapSuctcheonItem;
@@ -18,7 +18,7 @@ class MapSuctcheonItem;
  * 2.默认会阻断鼠标时间穿透到地图上，但是要想穿透鼠标事件请调用setAllowMouseEvent(false)
  * 3.pressed信号总是可以收到
  */
-class GRAPHICSMAPLIB_EXPORT MapObjectItem : public QObject, public QGraphicsPixmapItem
+class MapObjectItem : public QObject, public QGraphicsPixmapItem
 {
     Q_OBJECT
 public:
@@ -60,8 +60,9 @@ public:
     void setSpeed(double speed);
     const double getSpeed() const;
 
-    //MapTableItem * getMapTabel() const { return m_Suct; }
-    MapSuctcheonItem * getMapTabel() const { return m_Suct; }
+    /// 标牌
+    void takeOver(MapSuctcheonItem * suct) { m_Suct = suct; }
+    MapSuctcheonItem * mapTabel() const { return m_Suct; }
 public:
     /// 获取所有的实例
     static const QSet<MapObjectItem*> &items();
@@ -77,7 +78,7 @@ signals:
     void coordinateDragged(const QGeoCoordinate &coord);
     void rotationChanged(qreal degree);
     void routeChanged(MapRouteItem *route);
-    void menuRequest();
+    void propertyRequset(MapObjectItem *item);
 protected:
     /// 获取rotation信号和移动信号
     virtual QVariant itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value) override;
@@ -87,19 +88,20 @@ protected:
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 private:
     static QSet<MapObjectItem*> m_items;         ///< 所有实例
-
+protected:
+    bool m_enableMouse = true;
+    bool m_checkable = false;
+    bool m_checked = false;
 private:
     QGeoCoordinate          m_coord;
     QVector3D               m_euler;
     QGraphicsEllipseItem    m_border;
     QGraphicsSimpleTextItem m_text;
     MapRouteItem           *m_route = nullptr;
-    //
-    bool m_enableMouse = true;
-    bool m_checkable = false;
-    bool m_checked = false;
+
     //
     QPoint m_pressPos;
     // 节点速度  note:支持航路节点速度存储 亦可指代当前节点初始速度
@@ -107,6 +109,9 @@ private:
 
     //MapTableItem	*m_Suct = nullptr; //显示标牌对象
     MapSuctcheonItem *m_Suct = nullptr;
+
+    QMenu   *m_menu;
+    QAction *m_action;
 };
 
 #endif // MAPOBJECTITEM_H

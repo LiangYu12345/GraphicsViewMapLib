@@ -17,7 +17,7 @@ void MapSuctcheonItem::MapScutcheonLine::paint(QPainter *painter, const QStyleOp
     painter->restore();
 }
 
-MapSuctcheonItem::MapSuctcheonItem(MapObjectItem *parent)
+MapSuctcheonItem::MapSuctcheonItem(QGraphicsItem *parent)
     :QGraphicsItem(parent)
 {
     m_JoinPen = QPen(QColor(128, 255, 255, 200));
@@ -29,7 +29,6 @@ MapSuctcheonItem::MapSuctcheonItem(MapObjectItem *parent)
     }
 
     m_pTablet = new MapTableItem({0, 0, 0}, m_pJoinLine);
-    m_pTablet->setFixDirect(true, 45);
     setOffset(100, 45);
 
     connect(m_pTablet, &MapTableItem::coordinateDragged, this, &MapSuctcheonItem::onCoordinateDragged);
@@ -37,6 +36,8 @@ MapSuctcheonItem::MapSuctcheonItem(MapObjectItem *parent)
     m_border.setPen(QPen(Qt::lightGray));
     m_border.setVisible(false);
     m_border.setParentItem(this);
+
+    this->setFixedDirect(true);
 }
 
 MapSuctcheonItem::~MapSuctcheonItem()
@@ -101,6 +102,10 @@ void MapSuctcheonItem::setOffset(qreal joinLineLength, int fixedAngle)
     auto sinAngle = sin(fixedAngle * M_PI / 180);
     auto cosAngle = cos(fixedAngle * M_PI / 180);
 
+//    if(fixedAngle < 0){
+//        fixedAngle = -fixedAngle;
+//    }
+
     endPos = {sinAngle * joinLineLength, -cosAngle * joinLineLength};
     m_pJoinLine->setLine({QPointF(0 ,0), endPos});
     m_pTablet->setPos(m_pJoinLine->line().p2());
@@ -151,9 +156,9 @@ void MapSuctcheonItem::setValue(const QString &field, const QString &value)
     m_pTablet->setValue(field, value);
 }
 
-void MapSuctcheonItem::setFixedDirect(bool bFiexdDirect, qreal fixedangle)
+void MapSuctcheonItem::setFixedDirect(bool bFiexdDirect)
 {
-    m_pTablet->setFixDirect(bFiexdDirect, fixedangle);
+    m_bFixedDirect = bFiexdDirect;
 }
 
 void MapSuctcheonItem::setBorderPen(const QPen &borderPen)
@@ -174,6 +179,12 @@ void MapSuctcheonItem::setJoinPen(const QPen &joinPen)
 void MapSuctcheonItem::updateTableSize()
 {
     m_pTablet->updateTableSize();
+}
+
+void MapSuctcheonItem::onParentRotateChanged(qreal degree)
+{
+    if(m_bFixedDirect)
+        this->setRotation(-degree);
 }
 
 QPainterPath MapSuctcheonItem::shape() const
@@ -197,28 +208,14 @@ QRectF MapSuctcheonItem::boundingRect() const
     auto line = m_pJoinLine->line();
     auto table = m_pTablet->tabletRect();
 
-    auto width = abs(line.p2().x()) + table.width();
-    auto height = abs(line.p2().y()) + table.height();
+    auto width = qAbs(line.p2().x()) + table.width();
+    auto height = qAbs(line.p2().y()) + table.height();
     return QRectF(-width, -height, width, height);
 }
 
 void MapSuctcheonItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    if (m_pJoinLine && m_pTablet)
-    {
-        auto line = m_pJoinLine->line();
-//        qDebug()<<line.p2() << "paint";
-        //注释代码即为图表不给父对象时
-//        // 拿到飞机在场景的坐标，转到当前视口坐标，加上线段的偏移量得到新的视口坐标，将新的视口坐标转到场景坐标上，将图表放在该场景新的坐标
-//        auto item = (MapObjectItem *)this->parentItem();
-//        auto sceenPos = item->pos();
-//        auto viewPos = this->scene()->views().at(0)->mapFromScene(sceenPos);
 
-//        QPoint sceenOffsetPos = viewPos + QPoint(line.x2(), line.y2());
-//        ((QGraphicsItem*)m_pTablet)->setPos(this->scene()->views().at(0)->mapToScene(sceenOffsetPos));
-
-        //m_pTablet->setPos(line.p2());
-    }
 }
 
 void MapSuctcheonItem::onCoordinateDragged(const QPointF& point)

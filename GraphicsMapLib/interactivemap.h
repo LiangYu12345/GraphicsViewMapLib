@@ -13,7 +13,7 @@ class MapObjectItem;
  * 2.该地图可实现鼠标缩放地图，配合Operator操作器实现地图对象的创建（预设了几个简单的操作器，复杂操作请自己继承实现）
  * \note 通过该类管理的对象，不要手动从场景移除，请调用该类的删除接口
  */
-class GRAPHICSMAPLIB_EXPORT InteractiveMap : public GraphicsMap
+class InteractiveMap : public GraphicsMap
 {
     Q_OBJECT
 public:
@@ -84,7 +84,7 @@ void InteractiveMap::removeMapItem(T *item)
  * \todo 为了统计操作器的交互习惯，建议左键双击完成编辑、右键赋予具体的编辑功能
  * \warning 重写子类的ready和end时，必须调用基类函数
  */
-class GRAPHICSMAPLIB_EXPORT MapOperator : public QObject
+class MapOperator : public QObject
 {
     Q_OBJECT
     friend InteractiveMap;

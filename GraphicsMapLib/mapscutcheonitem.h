@@ -1,7 +1,6 @@
 ﻿#ifndef MAPSUCTCHEONITEM_H
 #define MAPSUCTCHEONITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsItem>
 #include <QGeoCoordinate>
 #include <QFont>
@@ -11,7 +10,7 @@
 class MapObjectItem;
 class MapTableItem;
 
-class GRAPHICSMAPLIB_EXPORT MapSuctcheonItem : public QObject, public QGraphicsItem
+class MapSuctcheonItem : public QObject, public QGraphicsItem
 {
     /*line of Scutcheon.*/
     class MapScutcheonLine :public QGraphicsLineItem
@@ -24,8 +23,8 @@ class GRAPHICSMAPLIB_EXPORT MapSuctcheonItem : public QObject, public QGraphicsI
     };
     Q_OBJECT
 public:
-    /// 继承父对象将同步一切事件，但旋转会导致子对象一起旋转。
-    MapSuctcheonItem(MapObjectItem * parent = nullptr);
+    /// 继承父对象将同步一切事件
+    MapSuctcheonItem(QGraphicsItem * parent = nullptr);
     ~MapSuctcheonItem();
     /// 设置鼠标可拖拽
     void setMoveable(bool movable);
@@ -41,6 +40,7 @@ public:
     void setMargins(int left, int top, int right, int bottom);
     void setSpacing(int space);
     /// 设置连线图表的角度和长度  params: 这里长度为屏幕坐标,由于图表为ItemIgnoresTransformations 所以只需计算屏幕的终点位置
+    /// 该考虑的角度值为0-360,负角度
     void setOffset(qreal joinLineLength, int fixedAngle);
     void setOffset(QPointF endPos);
     /// 添加字段. params: 1.field  字段名. 2.bVolatile 标记字段值是否为易变性.
@@ -55,9 +55,9 @@ public:
     void setValuePen(const QString &field, const QPen &pen);
     /// 设置字段值. params: 1.field 字段名.   2.value 字段值.
     void setValue(const QString &field, const QString &value);
-    /// 设置启用固定方向. 添加作为子项时,会跟随父项转动；此时若想固定方向，启用固定方向，并调用SetHeading将angle设置为父转动角度负值.
-    /// params: 1.bFiexdDirect 标识是否启用固定方向. 2.fixedangle   固定角度值.
-    void setFixedDirect(bool bFiexdDirect, qreal fixedangle = 0.0);
+    /// 设置启用固定方向. 添加作为子项时,会跟随父项转动；此时若想固定方向，启用固定方向，并ngle设置为父转动角度负值.
+    /// params: 1.bFiexdDirect 标识是否启用固定方向.
+    void setFixedDirect(bool bFiexdDirect);
     /// 设置边框画笔.
     void setBorderPen(const QPen &borderPen);
     /// 设置背景画刷.
@@ -68,6 +68,9 @@ public:
     void updateTableSize();
 
     MapTableItem * getTabel() { return m_pTablet; }
+
+    /// 如果存在父类，如果其为固定方向 则将父类旋转的值 取反旋转
+    void onParentRotateChanged(qreal degree);
 protected:
     QPainterPath shape()  const override;
     QRectF boundingRect() const override;

@@ -1,11 +1,11 @@
 ﻿#ifndef MAPLINEITEM_H
 #define MAPLINEITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QGraphicsPathItem>
 #include <QGeoCoordinate>
 #include <QTimer>
 #include <QGraphicsPixmapItem>
+#include "mapobjectitem.h"
 
 class MapObjectItem;
 class MapLabelItem;
@@ -13,12 +13,14 @@ class MapLabelItem;
 /*!
  * \brief 直线
  */
-class GRAPHICSMAPLIB_EXPORT MapLineItem : public QObject, public QGraphicsLineItem
+class MapLineItem : public QObject, public QGraphicsLineItem
 {
     Q_OBJECT
 public:
 	MapLineItem();
     ~MapLineItem();
+    /// 设置线段可选中
+    void setCheckable(bool checkable);
     /// 设置起始点
 	void setStartPoint(const QGeoCoordinate & pt);
 	/// 设置末端点
@@ -27,6 +29,8 @@ public:
 	void setText(const QString &text, Qt::Alignment align = Qt::AlignCenter);
 	/// 设置文字颜色
 	void setTextColor(const QColor &color);
+    /// 设置线段颜色
+    void setLineColor(const QColor &color);
 	/// 设置文字大小
 	void setFontSizeF(const qreal size);
 	/// 设置线宽
@@ -46,9 +50,15 @@ public:
     /// 获取所有的实例
     static const QSet<MapLineItem*> &items();
 
+signals:
+    void doubleClicked();
+
+protected:
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 private:
     void updateEndings();
 
+//    void onCoordinateDragged(const QGeoCoordinate &coord);
 private:
     static QSet<MapLineItem*> m_items;         ///< 所有实例
 
@@ -57,6 +67,7 @@ private:
     QGraphicsSimpleTextItem  m_text;
     QGraphicsPixmapItem      m_startIcon;  ///<起始图标
     QGraphicsPixmapItem      m_endIcon;    ///<末端图标
+    bool m_checkable;    ///< 勘测点可选中性
     QPair<QGeoCoordinate, QGeoCoordinate> m_endings;   ///<线段两点
 };
 

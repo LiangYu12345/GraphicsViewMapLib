@@ -1,7 +1,6 @@
 ﻿#ifndef MAPRANGERINGITEM_H
 #define MAPRANGERINGITEM_H
 
-#include "GraphicsMapLib_global.h"
 #include <QObject>
 #include <QGeoCoordinate>
 #include <QGraphicsItem>
@@ -16,7 +15,7 @@ class MapObjectItem;
  * 该图形通常显示为椭圆，仅在水平方向和垂直方向的距离较为准确，其他角度通常都有误差，在低纬度上误差较小对结果影响不大
  * \warning 该元素对渲染效率影响较大，会占用过多CPU，暂未找到好的解决方案
  */
-class GRAPHICSMAPLIB_EXPORT MapRangeRingItem : public QObject, public QGraphicsItem
+class MapRangeRingItem : public QObject, public QGraphicsItem
 {
     Q_OBJECT
 public:

@@ -77,7 +77,7 @@ void InteractiveMap::clearOperator()
 void InteractiveMap::setCenter(const MapObjectItem *obj)
 {
     if(m_centerObj)
-        disconnect(obj, &MapObjectItem::coordinateChanged, this, qOverload<const QGeoCoordinate&>(&GraphicsMap::centerOn));
+        disconnect(m_centerObj, &MapObjectItem::coordinateChanged, this, qOverload<const QGeoCoordinate&>(&GraphicsMap::centerOn));
     // only case that we center on object at first that we should to save drag mode and anchor mode
     else {
         m_dragMode = this->dragMode();

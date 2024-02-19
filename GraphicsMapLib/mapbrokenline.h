@@ -1,22 +1,20 @@
-﻿#ifndef MAPPOLYGONITEM_H
-#define MAPPOLYGONITEM_H
+﻿#ifndef MAPBROKENLINE_H
+#define MAPBROKENLINE_H
 
-#include <QGraphicsItemGroup>
-#include <QGraphicsPolygonItem>
-#include <QGraphicsEllipseItem>
+#include <QGraphicsPathItem>
 #include <QGeoCoordinate>
 #include <QMenu>
 
 /*!
- * \brief 多边形
- * \note 暂缺少图形拖动的实现
+ * \brief 折线
+ * \note
  */
-class MapPolygonItem : public QObject, public QGraphicsPolygonItem
+class MapBrokenLine : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT
 public:
-    MapPolygonItem();
-    ~MapPolygonItem();
+    MapBrokenLine();
+    ~MapBrokenLine();
     /// 控制可编辑性
     void setEditable(bool editable);
     bool isEditable() const;
@@ -38,7 +36,7 @@ public:
 
 public:
     /// 获取所有的实例
-    static const QSet<MapPolygonItem*> &items();
+    static const QSet<MapBrokenLine*> &items();
 
 signals:
     void added(const int index, const QGeoCoordinate &coord);
@@ -48,7 +46,7 @@ signals:
     void doubleClicked();
     void editableChanged(bool editable);
 
-    void propertyRequset(MapPolygonItem *item);
+    void propertyRequset(MapBrokenLine *item);
 protected:
     virtual QVariant itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value) override;
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
@@ -58,7 +56,7 @@ private:
     void updateEditable();
 
 private:
-    static QSet<MapPolygonItem*> m_items;         ///< 所有实例
+    static QSet<MapBrokenLine*> m_items;         ///< 所有实例
 
 private:
     bool    m_editable;   ///< 鼠标是否可交互编辑
@@ -71,4 +69,4 @@ private:
     QAction *m_action;
 };
 
-#endif // MAPPOLYGONITEM_H
+#endif // MAPBROKENLINE_H
