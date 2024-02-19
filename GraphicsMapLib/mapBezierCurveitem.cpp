@@ -107,6 +107,15 @@ void MapBezierCurveItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 
 void MapBezierCurveItem::InsertBezierCurve(const QVector<QPointF> &vecSrc, QVector<QPointF> &vecBezier)
 {
+	//有两个控制点的曲线方程：
+	//P = (1-t)P1 + tP2
+	
+	//有三个控制点的曲线方程：
+	//P = (1−t)2P1 + 2(1−t)tP2 + t2P3
+	
+	//有四个控制点的曲线方程：
+	//P = (1−t)3P1 + 3(1−t)2tP2 +3(1−t)t2P3 + t3P4
+	
     QVector<QPointF> controlPoints;
     for (int i = 0; i < vecSrc.size() - 1; ++i)
     {
